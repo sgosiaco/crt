@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/BigJk/crt"
-	bubbleadapter "github.com/BigJk/crt/bubbletea"
-	tea "github.com/charmbracelet/bubbletea"
 	"image/color"
+
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/sgosiaco/crt"
+	bubbleadapter "github.com/sgosiaco/crt/bubbletea"
 )
 
 const (

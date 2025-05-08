@@ -2,11 +2,12 @@ package bubbletea
 
 import (
 	"fmt"
-	"github.com/BigJk/crt"
+	"image/color"
+
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/termenv"
-	"image/color"
+	"github.com/sgosiaco/crt"
 )
 
 func init() {

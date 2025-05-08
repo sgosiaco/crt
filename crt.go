@@ -2,7 +2,12 @@ package crt
 
 import (
 	"fmt"
-	"github.com/BigJk/crt/shader"
+	"image"
+	"image/color"
+	"io"
+	"sync"
+	"unicode/utf8"
+
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -10,11 +15,7 @@ import (
 	"github.com/lucasb-eyer/go-colorful"
 	"github.com/muesli/ansi"
 	"github.com/muesli/termenv"
-	"image"
-	"image/color"
-	"io"
-	"sync"
-	"unicode/utf8"
+	"github.com/sgosiaco/crt/shader"
 )
 
 // colorCache is the ansi color cache.

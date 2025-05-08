@@ -1,8 +1,9 @@
 package shader
 
 import (
-	"github.com/hajimehoshi/ebiten/v2"
 	"sync"
+
+	"github.com/hajimehoshi/ebiten/v2"
 )
 
 type Shader interface {

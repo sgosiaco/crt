@@ -11,7 +11,7 @@ This started as a simple proof of concept for the game I'm writing with the help
 ## Usage
 
 ```
-go get github.com/BigJk/crt@latest
+go get github.com/sgosiaco/crt@latest
 ```
 
 
@@ -19,8 +19,8 @@ go get github.com/BigJk/crt@latest
 package main
 
 import (
-	"github.com/BigJk/crt"
-	bubbleadapter "github.com/BigJk/crt/bubbletea"
+	"github.com/sgosiaco/crt"
+	bubbleadapter "github.com/sgosiaco/crt/bubbletea"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"image/color"

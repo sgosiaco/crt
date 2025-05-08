@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
-	"github.com/BigJk/crt"
-	bubbleadapter "github.com/BigJk/crt/bubbletea"
-	"github.com/muesli/termenv"
 	"image/color"
 	"math/rand"
 	"strings"
 	"time"
+
+	"github.com/muesli/termenv"
+	"github.com/sgosiaco/crt"
+	bubbleadapter "github.com/sgosiaco/crt/bubbletea"
 
 	"github.com/charmbracelet/bubbles/progress"
 	"github.com/charmbracelet/bubbles/spinner"

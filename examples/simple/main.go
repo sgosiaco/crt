@@ -1,11 +1,12 @@
 package main
 
 import (
-	"github.com/BigJk/crt"
-	bubbleadapter "github.com/BigJk/crt/bubbletea"
+	"image/color"
+
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"image/color"
+	"github.com/sgosiaco/crt"
+	bubbleadapter "github.com/sgosiaco/crt/bubbletea"
 )
 
 const (

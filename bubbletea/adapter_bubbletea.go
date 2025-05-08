@@ -1,11 +1,12 @@
 package bubbletea
 
 import (
-	"github.com/BigJk/crt"
+	"unicode"
+
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
-	"unicode"
+	"github.com/sgosiaco/crt"
 )
 
 type teaKey struct {

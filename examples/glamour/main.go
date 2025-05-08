@@ -1,15 +1,16 @@
 package main
 
 import (
-	"github.com/BigJk/crt"
-	bubbleadapter "github.com/BigJk/crt/bubbletea"
+	"image/color"
+	"os"
+	"strings"
+
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
-	"image/color"
-	"os"
-	"strings"
+	"github.com/sgosiaco/crt"
+	bubbleadapter "github.com/sgosiaco/crt/bubbletea"
 )
 
 const (
@@ -102,7 +103,7 @@ func main() {
 		G: 30,
 		B: 30,
 		A: 255,
-	}, tea.WithAltScreen())
+	}) // tea.WithAltScreen()
 	if err != nil {
 		panic(err)
 	}

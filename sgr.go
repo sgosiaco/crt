@@ -2,9 +2,10 @@ package crt
 
 import (
 	"fmt"
-	"github.com/muesli/termenv"
 	"strings"
 	"sync"
+
+	"github.com/muesli/termenv"
 )
 
 var sgrMtx = &sync.Mutex{}

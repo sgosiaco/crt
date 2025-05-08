@@ -3,17 +3,18 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/BigJk/crt"
-	bubbleadapter "github.com/BigJk/crt/bubbletea"
-	"github.com/BigJk/crt/shader"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
-	"github.com/hajimehoshi/ebiten/v2"
 	"image/color"
 	"math/rand"
 	"net/http"
 	_ "net/http/pprof"
 	"time"
+
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
+	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/sgosiaco/crt"
+	bubbleadapter "github.com/sgosiaco/crt/bubbletea"
+	"github.com/sgosiaco/crt/shader"
 )
 
 const (

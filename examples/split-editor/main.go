@@ -1,14 +1,15 @@
 package main
 
 import (
-	"github.com/BigJk/crt"
-	bubbleadapter "github.com/BigJk/crt/bubbletea"
+	"image/color"
+
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/textarea"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"image/color"
+	"github.com/sgosiaco/crt"
+	bubbleadapter "github.com/sgosiaco/crt/bubbletea"
 )
 
 const (
@@ -207,7 +208,7 @@ func main() {
 		panic(err)
 	}
 
-	win, _, err := bubbleadapter.Window(Width, Height, fonts, newModel(), color.Black, tea.WithAltScreen())
+	win, _, err := bubbleadapter.Window(Width, Height, fonts, newModel(), color.Black) // tea.WithAltScreen()
 	if err != nil {
 		panic(err)
 	}

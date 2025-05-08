@@ -2,10 +2,11 @@ package crt
 
 import (
 	"bytes"
+	"testing"
+
 	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/termenv"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestSGR(t *testing.T) {

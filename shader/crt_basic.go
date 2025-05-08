@@ -1,8 +1,9 @@
 package shader
 
 import (
-	"github.com/hajimehoshi/ebiten/v2"
 	"math/rand"
+
+	"github.com/hajimehoshi/ebiten/v2"
 )
 
 // crtBasicKage is a CRT shader that simulates a CRT monitor with a basic pixel grid.
