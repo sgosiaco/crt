@@ -19,7 +19,7 @@ const (
 // GridCell is a single cell in the terminal grid.
 type GridCell struct {
 	Char   rune
-	Fg     color.Color
-	Bg     color.Color
+	Fg     color.RGBA
+	Bg     color.RGBA
 	Weight FontWeight
 }

@@ -48,7 +48,7 @@ func main() {
 	enableShader := flag.Bool("shader", false, "Enable shader")
 	flag.Parse()
 
-	fonts, err := crt.LoadFaces("./fonts/IosevkaTermNerdFontMono-Regular.ttf", "./fonts/IosevkaTermNerdFontMono-Bold.ttf", "./fonts/IosevkaTermNerdFontMono-Italic.ttf", crt.GetFontDPI(), 9.0)
+	fonts, err := crt.LoadDefaultFaces(crt.GetFontDPI(), 9.0)
 	if err != nil {
 		panic(err)
 	}
@@ -72,13 +72,24 @@ func main() {
 	win.SetOnPreDraw(func(screen *ebiten.Image) {
 		lastStart = time.Now().UnixMicro()
 	})
+	var sum uint64
+	var samples uint64
 	win.SetOnPostDraw(func(screen *ebiten.Image) {
 		elapsed := time.Now().UnixMicro() - lastStart
-		if (1000 / (float64(elapsed) * 0.001)) > 500 {
+
+		if elapsed == 0 {
 			return
 		}
 
-		fmt.Printf("Frame took %d micro seconds FPS=%.2f\n", elapsed, 1000/(float64(elapsed)*0.001))
+		fps := 1000 / (float64(elapsed) * 0.001)
+		// if fps > 500 {
+		// 	return
+		// }
+
+		sum += uint64(fps)
+		samples += 1
+
+		fmt.Printf("[Avg: %d]Frame took %d micro seconds FPS=%.2f\n", sum/samples, elapsed, fps)
 	})
 
 	if *enableShader {

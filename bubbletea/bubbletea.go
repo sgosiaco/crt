@@ -17,17 +17,18 @@ func init() {
 // Window creates a new crt based bubbletea window with the given width, height, fonts, model and default background color.
 // Additional options can be passed to the bubbletea program.
 func Window(width int, height int, fonts crt.Fonts, model tea.Model, defaultBg color.Color, options ...tea.ProgramOption) (*crt.Window, *tea.Program, error) {
-	gameInput := crt.NewConcurrentRW()
+	// TODO: Maybe try feeding ebiten keys directly to gameInput instead of having to manually map everything
+	//gameInput := crt.NewConcurrentRW()
 	gameOutput := crt.NewConcurrentRW()
 
-	go gameInput.Run()
+	//go gameInput.Run()
 	go gameOutput.Run()
 
 	prog := tea.NewProgram(
 		model,
 		append([]tea.ProgramOption{
 			tea.WithMouseAllMotion(),
-			tea.WithInput(gameInput),
+			tea.WithInput(nil), // (gameInput),
 			tea.WithOutput(gameOutput),
 			tea.WithANSICompressor(),
 		}, options...)...,

@@ -30,12 +30,12 @@ func (m model) View() string {
 }
 
 func main() {
-	fonts, err := crt.LoadFaces("./fonts/IosevkaTermNerdFontMono-Regular.ttf", "./fonts/IosevkaTermNerdFontMono-Bold.ttf", "./fonts/IosevkaTermNerdFontMono-Italic.ttf", crt.GetFontDPI(), 16.0)
+	fonts, err := crt.LoadDefaultFaces(crt.GetFontDPI(), 16.0)
 	if err != nil {
 		panic(err)
 	}
 
-	win, prog, err := bubbleadapter.Window(Width, Height, fonts, model{}, color.Black, tea.WithAltScreen())
+	win, prog, err := bubbleadapter.Window(Width, Height, fonts, model{}, color.Black)
 	if err != nil {
 		panic(err)
 	}

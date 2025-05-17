@@ -19,8 +19,11 @@ type MouseButton struct {
 }
 
 type MouseMotion struct {
-	X int
-	Y int
+	X     int
+	Y     int
+	Shift bool
+	Alt   bool
+	Ctrl  bool
 }
 
 type MouseWheel struct {

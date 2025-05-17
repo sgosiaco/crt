@@ -1,0 +1,2 @@
+"\x1b[?25l\x1b[?2004h\x1b[?1003h\x1b[?1006h\rDo mouse stuff. When you're done press q to quit.\x1b[K\r\n\x1b[K\x1b[186D"
+"\x1b[A(X: 86, Y: 29) motion\x1b[K\r\n\rDo mouse stuff. When you're done press q to quit.\x1b[K\r\n\x1b[K\x1b[186D"

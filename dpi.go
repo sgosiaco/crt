@@ -1,9 +1,10 @@
 package crt
 
 import (
-	"github.com/hajimehoshi/ebiten/v2"
 	"os"
 	"strconv"
+
+	"github.com/hajimehoshi/ebiten/v2"
 )
 
 // DeviceScale returns the current device scale factor.
@@ -17,7 +18,7 @@ func DeviceScale() float64 {
 		}
 	}
 
-	return ebiten.DeviceScaleFactor()
+	return ebiten.Monitor().DeviceScaleFactor() // Deprecated: ebiten.DeviceScaleFactor()
 }
 
 // GetFontDPI returns the recommended font DPI for the current device.

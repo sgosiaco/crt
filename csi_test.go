@@ -2,9 +2,10 @@ package crt
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/muesli/termenv"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestCSI(t *testing.T) {
@@ -18,6 +19,7 @@ func TestCSI(t *testing.T) {
 	testString += termenv.CSI + termenv.ShowCursorSeq
 	testString += fmt.Sprintf(termenv.CSI+termenv.CursorPositionSeq, 1, 2)
 	testString += fmt.Sprintf(termenv.CSI+termenv.CursorBackSeq, 5)
+	testString += termenv.CSI + "K"
 
 	var sequences []any
 	for i := 0; i < len(testString); i++ {
@@ -38,5 +40,6 @@ func TestCSI(t *testing.T) {
 		CursorShowSeq{},
 		CursorPositionSeq{Row: 1, Col: 2},
 		CursorBackSeq{Count: 5},
+		EraseLineSeq{Type: 0},
 	}, sequences)
 }

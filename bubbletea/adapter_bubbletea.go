@@ -33,10 +33,12 @@ var ebitenToTeaKeys = map[ebiten.Key]teaKey{
 	ebiten.KeyEnter:      {tea.KeyEnter, []rune{'\n'}},
 	ebiten.KeyTab:        {tea.KeyTab, []rune{}},
 	ebiten.KeyBackspace:  {tea.KeyBackspace, []rune{}},
+	ebiten.KeyInsert:     {tea.KeyInsert, []rune{}},
 	ebiten.KeyDelete:     {tea.KeyDelete, []rune{}},
 	ebiten.KeyHome:       {tea.KeyHome, []rune{}},
 	ebiten.KeyEnd:        {tea.KeyEnd, []rune{}},
 	ebiten.KeyPageUp:     {tea.KeyPgUp, []rune{}},
+	ebiten.KeyPageDown:   {tea.KeyPgDown, []rune{}},
 	ebiten.KeyArrowUp:    {tea.KeyUp, []rune{}},
 	ebiten.KeyArrowDown:  {tea.KeyDown, []rune{}},
 	ebiten.KeyArrowLeft:  {tea.KeyLeft, []rune{}},
@@ -55,6 +57,8 @@ var ebitenToTeaKeys = map[ebiten.Key]teaKey{
 	ebiten.KeyF11:        {tea.KeyF11, []rune{}},
 	ebiten.KeyF12:        {tea.KeyF12, []rune{}},
 	ebiten.KeyShift:      {tea.KeyShiftLeft, []rune{}},
+	ebiten.KeyShiftLeft:  {tea.KeyShiftLeft, []rune{}},
+	ebiten.KeyShiftRight: {tea.KeyShiftRight, []rune{}},
 }
 
 var ebitenToCtrlKeys = map[ebiten.Key]tea.KeyType{
@@ -90,10 +94,14 @@ var ebitenToCtrlKeys = map[ebiten.Key]tea.KeyType{
 	ebiten.KeyApostrophe:   tea.KeyCtrlCaret,
 }
 
-var ebitenToTeaMouse = map[ebiten.MouseButton]tea.MouseEventType{
-	ebiten.MouseButtonLeft:   tea.MouseLeft,
-	ebiten.MouseButtonMiddle: tea.MouseMiddle,
-	ebiten.MouseButtonRight:  tea.MouseRight,
+var ebitenToShiftKeys = map[ebiten.Key]tea.KeyType{
+	ebiten.KeyTab:   tea.KeyShiftTab,
+	ebiten.KeyUp:    tea.KeyShiftUp,
+	ebiten.KeyDown:  tea.KeyShiftDown,
+	ebiten.KeyRight: tea.KeyShiftRight,
+	ebiten.KeyLeft:  tea.KeyShiftLeft,
+	ebiten.KeyHome:  tea.KeyShiftHome,
+	ebiten.KeyEnd:   tea.KeyShiftEnd,
 }
 
 var ebitenToTeaMouseNew = map[ebiten.MouseButton]tea.MouseButton{
@@ -119,12 +127,19 @@ func WithFilterMousePressed(filter bool) Options {
 // Adapter represents a bubbletea adapter for the crt package.
 type Adapter struct {
 	prog               *tea.Program
+	runeBuffer         []rune
+	keyBuffer          []ebiten.Key
 	filterMousePressed bool
 }
 
 // NewAdapter creates a new bubbletea adapter.
 func NewAdapter(prog *tea.Program, options ...Options) *Adapter {
-	b := &Adapter{prog: prog, filterMousePressed: true}
+	b := &Adapter{
+		prog:               prog,
+		runeBuffer:         make([]rune, 100),       // TODO: Determine best sizes, but for now 100 should be ok
+		keyBuffer:          make([]ebiten.Key, 100), // TODO: Determine best sizes, but for now 100 should be ok
+		filterMousePressed: true,
+	}
 
 	for i := range options {
 		options[i](b)
@@ -137,25 +152,25 @@ func (b *Adapter) HandleMouseMotion(motion crt.MouseMotion) {
 	b.prog.Send(tea.MouseMsg{
 		X:      motion.X,
 		Y:      motion.Y,
-		Alt:    false,
-		Ctrl:   false,
-		Type:   tea.MouseMotion,
+		Shift:  motion.Shift,
+		Alt:    motion.Alt,
+		Ctrl:   motion.Ctrl,
 		Action: tea.MouseActionMotion,
 	})
 }
 
 func (b *Adapter) HandleMouseButton(button crt.MouseButton) {
 	// Filter this event or two events will be sent for one click in the current bubbletea version.
-	if b.filterMousePressed && button.JustPressed {
-		return
-	}
+	// if b.filterMousePressed && button.JustPressed {
+	// 	return
+	// }
 
 	msg := tea.MouseMsg{
 		X:      button.X,
 		Y:      button.Y,
-		Alt:    ebiten.IsKeyPressed(ebiten.KeyAlt),
-		Ctrl:   ebiten.IsKeyPressed(ebiten.KeyControl),
-		Type:   ebitenToTeaMouse[button.Button],
+		Shift:  button.Shift,
+		Alt:    button.Alt,
+		Ctrl:   button.Ctrl,
 		Button: ebitenToTeaMouseNew[button.Button],
 	}
 
@@ -169,28 +184,31 @@ func (b *Adapter) HandleMouseButton(button crt.MouseButton) {
 }
 
 func (b *Adapter) HandleMouseWheel(wheel crt.MouseWheel) {
+	direction := tea.MouseButtonNone
 	if wheel.DY > 0 {
-		b.prog.Send(tea.MouseMsg{
-			X:    wheel.X,
-			Y:    wheel.Y,
-			Alt:  ebiten.IsKeyPressed(ebiten.KeyAlt),
-			Ctrl: ebiten.IsKeyPressed(ebiten.KeyControl),
-			Type: tea.MouseWheelUp,
-		})
+		direction = tea.MouseButtonWheelUp
 	} else if wheel.DY < 0 {
-		b.prog.Send(tea.MouseMsg{
-			X:    wheel.X,
-			Y:    wheel.Y,
-			Alt:  ebiten.IsKeyPressed(ebiten.KeyAlt),
-			Ctrl: ebiten.IsKeyPressed(ebiten.KeyControl),
-			Type: tea.MouseWheelDown,
-		})
+		direction = tea.MouseButtonWheelUp
 	}
+
+	if direction == tea.MouseButtonNone {
+		return
+	}
+
+	b.prog.Send(tea.MouseMsg{
+		X:      wheel.X,
+		Y:      wheel.Y,
+		Shift:  wheel.Shift,
+		Alt:    wheel.Alt,
+		Ctrl:   wheel.Ctrl,
+		Button: direction,
+	})
 }
 
 func (b *Adapter) HandleKeyPress() {
-	newInputs := ebiten.AppendInputChars([]rune{})
-	for _, v := range newInputs {
+	// "reset" buffer before using
+	b.runeBuffer = ebiten.AppendInputChars(b.runeBuffer[:0])
+	for _, v := range b.runeBuffer {
 		switch v {
 		case ' ':
 			b.prog.Send(tea.KeyMsg{
@@ -207,25 +225,36 @@ func (b *Adapter) HandleKeyPress() {
 		}
 	}
 
-	var keys []ebiten.Key
-	keys = inpututil.AppendJustPressedKeys(keys)
+	// "reset" buffer before using
+	b.keyBuffer = inpututil.AppendJustPressedKeys(b.keyBuffer[:0])
 	repeatedBackspace := repeatingKeyPressed(ebiten.KeyBackspace)
 
 	if repeatedBackspace {
 		b.prog.Send(tea.KeyMsg{
 			Type:  tea.KeyBackspace,
 			Runes: []rune{},
-			Alt:   false,
+			Alt:   ebiten.IsKeyPressed(ebiten.KeyAlt),
 		})
 	}
 
-	for _, k := range keys {
+	for _, k := range b.keyBuffer {
 		if ebiten.IsKeyPressed(ebiten.KeyControl) {
 			if tk, ok := ebitenToCtrlKeys[k]; ok {
 				b.prog.Send(tea.KeyMsg{
 					Type:  tk,
 					Runes: []rune{},
-					Alt:   false,
+					Alt:   ebiten.IsKeyPressed(ebiten.KeyAlt),
+				})
+				continue
+			}
+		}
+
+		if ebiten.IsKeyPressed(ebiten.KeyShift) {
+			if tk, ok := ebitenToShiftKeys[k]; ok {
+				b.prog.Send(tea.KeyMsg{
+					Type:  tk,
+					Runes: []rune{},
+					Alt:   ebiten.IsKeyPressed(ebiten.KeyAlt),
 				})
 				continue
 			}

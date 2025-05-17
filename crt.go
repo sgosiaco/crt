@@ -11,7 +11,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
-	"github.com/hajimehoshi/ebiten/v2/text"
+	"github.com/hajimehoshi/ebiten/v2/text/v2"
 	"github.com/lucasb-eyer/go-colorful"
 	"github.com/muesli/ansi"
 	"github.com/muesli/termenv"
@@ -19,10 +19,14 @@ import (
 )
 
 // colorCache is the ansi color cache.
-var colorCache = map[int]color.Color{}
+var colorCache = map[int]color.RGBA{}
 
 type Window struct {
 	sync.Mutex
+
+	// window
+	height int
+	width  int
 
 	// Terminal dimensions and grid.
 	grid        [][]GridCell
@@ -38,15 +42,16 @@ type Window struct {
 
 	// Terminal cursor and color states.
 	cursorChar  string
-	cursorColor color.Color
+	cursorColor color.RGBA
 	showCursor  bool
 	cursorX     int
 	cursorY     int
 	mouseCellX  int
 	mouseCellY  int
-	defaultBg   color.Color
-	curFg       color.Color
-	curBg       color.Color
+	defaultFg   color.RGBA
+	defaultBg   color.RGBA
+	curFg       color.RGBA
+	curBg       color.RGBA
 	curWeight   FontWeight
 
 	// Callbacks
@@ -75,24 +80,40 @@ func NewGame(width int, height int, fonts Fonts, tty io.Reader, adapter InputAda
 		defaultBg = color.Black
 	}
 
-	bounds, _, _ := fonts.Normal.GlyphBounds([]rune("█")[0])
-	size := bounds.Max.Sub(bounds.Min)
+	rgbaWhite := color.RGBAModel.Convert(color.White).(color.RGBA)
+	convDefaultBg := color.RGBAModel.Convert(defaultBg).(color.RGBA)
 
-	cellWidth := size.X.Ceil()
-	cellHeight := size.Y.Ceil()
-	cellOffsetY := -bounds.Min.Y.Ceil()
+	// bounds, _, _ := fonts.NFace.GlyphBounds([]rune("█")[0])
+	// size := bounds.Max.Sub(bounds.Min)
+
+	// cellWidth := size.X.Ceil()
+	// cellHeight := size.Y.Ceil()
+	// cellOffsetY := -bounds.Min.Y.Ceil()
+	// cellOffsetY = 0
+	// left mon 12 30 100 30
+	// right mon 18 45 100 30
+
+	// left mon 12 30 100 30
+	// right mon 12 30 150 45
+	w, h := text.Measure("█", fonts.Normal, 0)
+	cellWidth := int(w)
+	cellHeight := int(h)
+	// TODO: Determine offset val
+	// From minimal testing, might not be needed anymore
+	cellOffsetY := 0
 
 	cellsWidth := int(float64(width)*DeviceScale()) / cellWidth
 	cellsHeight := int(float64(height)*DeviceScale()) / cellHeight
+	fmt.Println(cellWidth, cellHeight, cellsWidth, cellsHeight)
 
 	grid := make([][]GridCell, cellsHeight)
-	for y := 0; y < cellsHeight; y++ {
+	for y := range cellsHeight {
 		grid[y] = make([]GridCell, cellsWidth)
-		for x := 0; x < cellsWidth; x++ {
+		for x := range cellsWidth {
 			grid[y][x] = GridCell{
 				Char:   ' ',
-				Fg:     color.White,
-				Bg:     defaultBg,
+				Fg:     rgbaWhite,
+				Bg:     convDefaultBg,
 				Weight: FontWeightNormal,
 			}
 		}
@@ -100,13 +121,16 @@ func NewGame(width int, height int, fonts Fonts, tty io.Reader, adapter InputAda
 
 	game := &Window{
 		inputAdapter:     adapter,
+		height:           height,
+		width:            width,
 		cellsWidth:       cellsWidth,
 		cellsHeight:      cellsHeight,
 		cellWidth:        cellWidth,
 		cellHeight:       cellHeight,
 		cellOffsetY:      cellOffsetY,
 		fonts:            fonts,
-		defaultBg:        defaultBg,
+		defaultFg:        rgbaWhite,
+		defaultBg:        convDefaultBg,
 		grid:             grid,
 		tty:              tty,
 		bgColors:         image.NewRGBA(image.Rect(0, 0, cellsWidth*cellWidth, cellsHeight*cellHeight)),
@@ -144,8 +168,8 @@ func (g *Window) SetCursorChar(char string) {
 }
 
 // SetCursorColor sets the color of the cursor.
-func (g *Window) SetCursorColor(color color.Color) {
-	g.cursorColor = color
+func (g *Window) SetCursorColor(cursorColor color.Color) {
+	g.cursorColor = color.RGBAModel.Convert(cursorColor).(color.RGBA)
 	g.InvalidateBuffer()
 }
 
@@ -181,23 +205,24 @@ func (g *Window) InvalidateBuffer() {
 
 // ResetSGR resets the SGR attributes to their default values.
 func (g *Window) ResetSGR() {
-	g.curFg = color.White
+	g.curFg = color.RGBAModel.Convert(color.White).(color.RGBA)
 	g.curBg = g.defaultBg
 	g.curWeight = FontWeightNormal
 }
 
 // SetBgPixels sets a chunk of background pixels in the size of the cell.
-func (g *Window) SetBgPixels(x, y int, c color.Color) {
-	for i := 0; i < g.cellWidth; i++ {
-		for j := 0; j < g.cellHeight; j++ {
-			g.bgColors.Set(x*g.cellWidth+i, y*g.cellHeight+j, c)
+func (g *Window) SetBgPixels(x, y int, c color.RGBA) {
+	for i := range g.cellWidth {
+		for j := range g.cellHeight {
+			g.bgColors.SetRGBA(x*g.cellWidth+i, y*g.cellHeight+j, c)
+			//g.bgColors.Set(x*g.cellWidth+i, y*g.cellHeight+j, c)
 		}
 	}
 	g.InvalidateBuffer()
 }
 
 // SetBg sets the background color of a cell and checks if it needs to be redrawn.
-func (g *Window) SetBg(x, y int, c color.Color) {
+func (g *Window) SetBg(x, y int, c color.RGBA) {
 	ra, rg, rb, _ := g.grid[y][x].Bg.RGBA()
 	ca, cg, cb, _ := c.RGBA()
 	if ra == ca && rg == cg && rb == cb {
@@ -270,35 +295,64 @@ func (g *Window) handleCSI(csi any) {
 			g.cursorY = g.cellsHeight - 1
 		}
 	case EraseDisplaySeq:
-		if seq.Type != 2 {
-			return // only support 2 (erase entire display)
-		}
-
-		for i := 0; i < g.cellsWidth; i++ {
-			for j := 0; j < g.cellsHeight; j++ {
-				g.grid[j][i].Char = ' '
-				g.grid[j][i].Fg = color.White
-				g.grid[j][i].Bg = g.defaultBg
+		switch seq.Type {
+		case 0: // Clear from cursor to end of screen
+			// clear from cursor to end of line
+			for i := g.cursorX; i < g.cellsWidth; i++ {
+				g.grid[g.cursorY][i].Char = ' '
+				g.grid[g.cursorY][i].Fg = g.defaultFg
+				g.SetBg(i, g.cursorY, g.defaultBg)
+			}
+			// then clear rest of screen (starting from row after and going down)
+			for i := range g.cellsWidth {
+				for j := g.cursorY + 1; j < g.cellsHeight; j++ {
+					g.grid[j][i].Char = ' '
+					g.grid[j][i].Fg = g.defaultFg
+					g.SetBg(i, j, g.defaultBg)
+				}
+			}
+		case 1: // Clear from cursor to beginning of screen
+			// clear from cursor to end of line
+			for i := g.cursorX; i < g.cellsWidth; i++ {
+				g.grid[g.cursorY][i].Char = ' '
+				g.grid[g.cursorY][i].Fg = g.defaultFg
+				g.SetBg(i, g.cursorY, g.defaultBg)
+			}
+			// then clear rest of screen (starting from row above and going up)
+			for i := range g.cellsWidth {
+				for j := g.cursorY - 1; j >= 0; j-- {
+					g.grid[j][i].Char = ' '
+					g.grid[j][i].Fg = g.defaultFg
+					g.SetBg(i, j, g.defaultBg)
+				}
+			}
+		case 2, 3: // Clear entire screen Note: 3 is technically different, but for this it's close enough
+			for i := range g.cellsWidth {
+				for j := range g.cellsHeight {
+					g.grid[j][i].Char = ' '
+					g.grid[j][i].Fg = g.defaultFg
+					g.SetBg(i, j, g.defaultBg)
+				}
 			}
 		}
 	case EraseLineSeq:
 		switch seq.Type {
 		case 0: // erase from cursor to end of line
-			for i := g.cursorX; i < g.cellsWidth-g.cursorX; i++ {
-				g.grid[g.cursorY][g.cursorX+i].Char = ' '
-				g.grid[g.cursorY][g.cursorX+i].Fg = color.White
-				g.SetBg(g.cursorX+i, g.cursorY, g.defaultBg)
+			for i := g.cursorX; i < g.cellsWidth; i++ {
+				g.grid[g.cursorY][i].Char = ' '
+				g.grid[g.cursorY][i].Fg = g.defaultFg
+				g.SetBg(i, g.cursorY, g.defaultBg)
 			}
 		case 1: // erase from start of line to cursor
-			for i := 0; i < g.cursorX; i++ {
+			for i := range g.cursorX {
 				g.grid[g.cursorY][i].Char = ' '
-				g.grid[g.cursorY][i].Fg = color.White
+				g.grid[g.cursorY][i].Fg = g.defaultFg
 				g.SetBg(i, g.cursorY, g.defaultBg)
 			}
 		case 2: // erase entire line
-			for i := 0; i < g.cellsWidth; i++ {
+			for i := range g.cellsWidth {
 				g.grid[g.cursorY][i].Char = ' '
-				g.grid[g.cursorY][i].Fg = color.White
+				g.grid[g.cursorY][i].Fg = g.defaultFg
 				g.SetBg(i, g.cursorY, g.defaultBg)
 			}
 		}
@@ -344,8 +398,9 @@ func (g *Window) handleSGR(sgr any) {
 			g.curFg = val
 		} else {
 			if col, err := colorful.Hex(termenv.ANSI256Color(seq.Id).String()); err == nil {
-				g.curFg = col
-				colorCache[seq.Id] = col
+				conv := color.RGBAModel.Convert(col).(color.RGBA)
+				g.curFg = conv
+				colorCache[seq.Id] = conv
 			}
 		}
 	case SGRBgColor:
@@ -353,8 +408,9 @@ func (g *Window) handleSGR(sgr any) {
 			g.curBg = val
 		} else {
 			if col, err := colorful.Hex(termenv.ANSI256Color(seq.Id).String()); err == nil {
-				g.curBg = col
-				colorCache[seq.Id] = col
+				conv := color.RGBAModel.Convert(col).(color.RGBA)
+				g.curBg = conv
+				colorCache[seq.Id] = conv
 			}
 		}
 	}
@@ -384,6 +440,7 @@ func (g *Window) parseSequences(str string, printExtra bool) int {
 		} else if printExtra {
 			if r, size := utf8.DecodeRuneInString(str[i:]); r != utf8.RuneError {
 				g.PrintChar(r, g.curFg, g.curBg, g.curWeight)
+				// ??? why are we modifying i here
 				i += size - 1
 			}
 		}
@@ -409,10 +466,27 @@ func (g *Window) RecalculateBackgrounds() {
 }
 
 // PrintChar prints a character to the screen.
-func (g *Window) PrintChar(r rune, fg, bg color.Color, weight FontWeight) {
+func (g *Window) PrintChar(r rune, fg, bg color.RGBA, weight FontWeight) {
 	if r == '\n' {
 		g.cursorX = 0
 		g.cursorY++
+
+		// Scroll down if we're at the bottom and add a new line.
+		if g.cursorY >= g.cellsHeight {
+			diff := g.cursorY - g.cellsHeight + 1
+			g.grid = g.grid[diff:]
+			for range diff {
+				g.grid = append(g.grid, make([]GridCell, g.cellsWidth))
+				for i := range g.cellsWidth {
+					g.grid[len(g.grid)-1][i].Char = ' '
+					g.grid[len(g.grid)-1][i].Fg = g.defaultFg
+					g.grid[len(g.grid)-1][i].Bg = g.defaultBg
+				}
+			}
+			g.cursorY = g.cellsHeight - 1
+			g.RecalculateBackgrounds()
+		}
+
 		return
 	}
 
@@ -430,11 +504,11 @@ func (g *Window) PrintChar(r rune, fg, bg color.Color, weight FontWeight) {
 	if g.cursorY >= g.cellsHeight {
 		diff := g.cursorY - g.cellsHeight + 1
 		g.grid = g.grid[diff:]
-		for i := 0; i < diff; i++ {
+		for range diff {
 			g.grid = append(g.grid, make([]GridCell, g.cellsWidth))
-			for i := 0; i < g.cellsWidth; i++ {
+			for i := range g.cellsWidth {
 				g.grid[len(g.grid)-1][i].Char = ' '
-				g.grid[len(g.grid)-1][i].Fg = color.White
+				g.grid[len(g.grid)-1][i].Fg = g.defaultFg
 				g.grid[len(g.grid)-1][i].Bg = g.defaultBg
 			}
 		}
@@ -482,16 +556,22 @@ func (g *Window) Update() error {
 	})
 
 	mx, my := ebiten.CursorPosition()
-	mcx, mcy := mx/g.cellWidth, my/g.cellHeight
+	// only consider movement when cursor is within window boundaries
+	if mx >= 0 && mx <= g.width && my >= 0 && my <= g.height {
+		mcx, mcy := mx/g.cellWidth, my/g.cellHeight
 
-	if mcx != g.mouseCellX || mcy != g.mouseCellY {
-		g.mouseCellX = mcx
-		g.mouseCellY = mcy
+		if mcx != g.mouseCellX || mcy != g.mouseCellY {
+			g.mouseCellX = mcx
+			g.mouseCellY = mcy
 
-		g.inputAdapter.HandleMouseMotion(MouseMotion{
-			X: g.mouseCellX,
-			Y: g.mouseCellY,
-		})
+			g.inputAdapter.HandleMouseMotion(MouseMotion{
+				X:     g.mouseCellX,
+				Y:     g.mouseCellY,
+				Shift: ebiten.IsKeyPressed(ebiten.KeyShift),
+				Alt:   ebiten.IsKeyPressed(ebiten.KeyAlt),
+				Ctrl:  ebiten.IsKeyPressed(ebiten.KeyControl),
+			})
+		}
 	}
 
 	// Mouse buttons.
@@ -561,26 +641,40 @@ func (g *Window) Draw(screen *ebiten.Image) {
 		bufferImage.WritePixels(g.bgColors.Pix)
 
 		// Draw text
-		for y := 0; y < g.cellsHeight; y++ {
-			for x := 0; x < g.cellsWidth; x++ {
+		for y := range g.cellsHeight {
+			for x := range g.cellsWidth {
 				if g.grid[y][x].Char == ' ' {
 					continue
 				}
 
+				var weight *text.GoTextFace
 				switch g.grid[y][x].Weight {
 				case FontWeightNormal:
-					text.Draw(bufferImage, string(g.grid[y][x].Char), g.fonts.Normal, x*g.cellWidth, y*g.cellHeight+g.cellOffsetY, g.grid[y][x].Fg)
+					weight = g.fonts.Normal
+					// image, text, font, x, y, color
+					// text.Draw(bufferImage, string(g.grid[y][x].Char), g.fonts.Normal, x*g.cellWidth, y*g.cellHeight+g.cellOffsetY, g.grid[y][x].Fg)
 				case FontWeightBold:
-					text.Draw(bufferImage, string(g.grid[y][x].Char), g.fonts.Bold, x*g.cellWidth, y*g.cellHeight+g.cellOffsetY, g.grid[y][x].Fg)
+					weight = g.fonts.Bold
+					// text.Draw(bufferImage, string(g.grid[y][x].Char), g.fonts.Bold, x*g.cellWidth, y*g.cellHeight+g.cellOffsetY, g.grid[y][x].Fg)
 				case FontWeightItalic:
-					text.Draw(bufferImage, string(g.grid[y][x].Char), g.fonts.Italic, x*g.cellWidth, y*g.cellHeight+g.cellOffsetY, g.grid[y][x].Fg)
+					weight = g.fonts.Italic
+					// text.Draw(bufferImage, string(g.grid[y][x].Char), g.fonts.Italic, x*g.cellWidth, y*g.cellHeight+g.cellOffsetY, g.grid[y][x].Fg)
 				}
+
+				op := &text.DrawOptions{}
+				op.GeoM.Translate(float64(x*g.cellWidth), float64(y*g.cellHeight+g.cellOffsetY))
+				op.ColorScale.ScaleWithColor(g.grid[y][x].Fg)
+				text.Draw(bufferImage, string(g.grid[y][x].Char), weight, op)
 			}
 		}
 
 		// Draw cursor
 		if g.showCursor {
-			text.Draw(bufferImage, g.cursorChar, g.fonts.Normal, g.cursorX*g.cellWidth, g.cursorY*g.cellHeight+g.cellOffsetY, g.cursorColor)
+			// text.Draw(bufferImage, g.cursorChar, g.fonts.Normal, g.cursorX*g.cellWidth, g.cursorY*g.cellHeight+g.cellOffsetY, g.cursorColor)
+			op := &text.DrawOptions{}
+			op.GeoM.Translate(float64(g.cursorX*g.cellWidth), float64(g.cursorY*g.cellHeight+g.cellOffsetY))
+			op.ColorScale.ScaleWithColor(g.cursorColor)
+			text.Draw(bufferImage, g.cursorChar, g.fonts.Normal, op)
 		}
 
 		g.lastBuffer = bufferImage
@@ -589,24 +683,28 @@ func (g *Window) Draw(screen *ebiten.Image) {
 
 	// Draw shader
 	if g.shader != nil {
-		if g.shaderBuffer == nil {
-			g.shaderBuffer = ebiten.NewImageFromImage(bufferImage)
-		} else {
-			bounds := g.shaderBuffer.Bounds()
-			if len(g.shaderByteBuffer) < 4*bounds.Dx()*bounds.Dy() {
-				g.shaderByteBuffer = make([]byte, 4*bounds.Dx()*bounds.Dy())
-			}
-			bufferImage.ReadPixels(g.shaderByteBuffer)
-			g.shaderBuffer.WritePixels(g.shaderByteBuffer)
-		}
-
 		for i := range g.shader {
-			_ = g.shader[i].Apply(screen, g.shaderBuffer)
-
-			if len(g.shader) > 0 {
-				g.shaderBuffer.DrawImage(screen, nil)
-			}
+			g.shader[i].Apply(screen, bufferImage)
 		}
+
+		// if g.shaderBuffer == nil {
+		// 	g.shaderBuffer = ebiten.NewImageFromImage(bufferImage)
+		// } else {
+		// 	bounds := g.shaderBuffer.Bounds()
+		// 	if len(g.shaderByteBuffer) < 4*bounds.Dx()*bounds.Dy() {
+		// 		g.shaderByteBuffer = make([]byte, 4*bounds.Dx()*bounds.Dy())
+		// 	}
+		// 	bufferImage.ReadPixels(g.shaderByteBuffer)
+		// 	g.shaderBuffer.WritePixels(g.shaderByteBuffer)
+		// }
+		//
+		// for i := range g.shader {
+		// 	_ = g.shader[i].Apply(screen, g.shaderBuffer)
+		//
+		// 	if len(g.shader) > 0 {
+		// 		g.shaderBuffer.DrawImage(screen, nil)
+		// 	}
+		// }
 	} else {
 		screen.DrawImage(bufferImage, nil)
 	}
@@ -624,8 +722,11 @@ func (g *Window) Layout(outsideWidth, outsideHeight int) (int, int) {
 }
 
 func (g *Window) Run(title string) error {
+	// TODO: Determine best replacement
 	ebiten.SetScreenFilterEnabled(false)
 	ebiten.SetWindowSize(int(float64(g.cellsWidth*g.cellWidth)/DeviceScale()), int(float64(g.cellsHeight*g.cellHeight)/DeviceScale()))
+	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
+	// ebiten.SetWindowSize(g.width, g.height)
 	ebiten.SetWindowTitle(title)
 	if err := ebiten.RunGame(g); err != nil {
 		return err
@@ -636,6 +737,8 @@ func (g *Window) Run(title string) error {
 
 func (g *Window) RunWithOptions(options ...WindowOption) error {
 	ebiten.SetWindowSize(int(float64(g.cellsWidth*g.cellWidth)/DeviceScale()), int(float64(g.cellsHeight*g.cellHeight)/DeviceScale()))
+	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
+	// ebiten.SetWindowSize(g.width, g.height)
 
 	for _, opt := range options {
 		opt(g)

@@ -1,10 +1,12 @@
 package crt
 
 import (
-	"github.com/muesli/termenv"
+	"fmt"
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/muesli/termenv"
 )
 
 var csiMtx = &sync.Mutex{}
@@ -139,41 +141,52 @@ func parseCSIStruct(s string) (any, bool) {
 		return CursorHideSeq{}, true
 	}
 
+	fmt.Println("ESC", fmt.Sprintf(`"%s"`, s))
+
 	switch s[len(s)-1] {
 	case 'A':
-		if count, err := strconv.Atoi(s[:len(s)-1]); err == nil {
-			return CursorUpSeq{Count: count}, true
-		}
+		return CursorUpSeq{Count: getCount(s, 1)}, true
 	case 'B':
-		if count, err := strconv.Atoi(s[:len(s)-1]); err == nil {
-			return CursorDownSeq{Count: count}, true
-		}
+		return CursorDownSeq{Count: getCount(s, 1)}, true
 	case 'C':
-		if count, err := strconv.Atoi(s[:len(s)-1]); err == nil {
-			return CursorForwardSeq{Count: count}, true
-		}
+		return CursorForwardSeq{Count: getCount(s, 1)}, true
 	case 'D':
-		if count, err := strconv.Atoi(s[:len(s)-1]); err == nil {
-			return CursorBackSeq{Count: count}, true
-		}
+		return CursorBackSeq{Count: getCount(s, 1)}, true
 	case 'E':
-		if count, err := strconv.Atoi(s[:len(s)-1]); err == nil {
-			return CursorNextLineSeq{Count: count}, true
-		}
+		return CursorNextLineSeq{Count: getCount(s, 1)}, true
 	case 'F':
-		if count, err := strconv.Atoi(s[:len(s)-1]); err == nil {
-			return CursorPreviousLineSeq{Count: count}, true
-		}
+		return CursorPreviousLineSeq{Count: getCount(s, 1)}, true
 	case 'G':
-		if count, err := strconv.Atoi(s[:len(s)-1]); err == nil {
-			return CursorHorizontalSeq{Count: count}, true
+		return CursorHorizontalSeq{Count: getCount(s, 1)}, true
+	case 'H', 'f': // Note: f is the same but diff
+		// if no semicolon, then it should be just "H" (1,1)
+		if !strings.Contains(s, ";") {
+			return CursorPositionSeq{Row: 1, Col: 1}, true
 		}
-	case 'H':
-		if strings.Contains(s, ";") {
-			parts := strings.Split(s[:len(s)-1], ";")
-			if len(parts) != 2 {
+
+		// extract "prefix" ("2;2", ";2", "2;")
+		prefix := s[:len(s)-1]
+		parts := strings.Split(prefix, ";")
+
+		switch len(parts) {
+		case 1: // if we have exactly one, either it's "r;" or ";c"
+			row := 1
+			col := 1
+
+			conv, err := strconv.Atoi(parts[0])
+			if err != nil {
 				return nil, false
 			}
+
+			// if the "prefix" starts with ; then we know column was provided, otherwise row
+			if strings.HasPrefix(prefix, ";") {
+				col = conv
+			} else {
+				row = conv
+			}
+
+			return CursorPositionSeq{Row: row, Col: col}, true
+		case 2:
 			row, err := strconv.Atoi(parts[0])
 			if err != nil {
 				return nil, false
@@ -183,24 +196,21 @@ func parseCSIStruct(s string) (any, bool) {
 				return nil, false
 			}
 			return CursorPositionSeq{Row: row, Col: col}, true
+		default:
+			return nil, false
 		}
-		return nil, false
 	case 'J':
-		if t, err := strconv.Atoi(s[:len(s)-1]); err == nil {
-			return EraseDisplaySeq{Type: t}, true
-		}
+		// if it's just "J" then same as "0J"
+		// so default 0
+		return EraseDisplaySeq{Type: getCount(s, 0)}, true
 	case 'K':
-		if t, err := strconv.Atoi(s[:len(s)-1]); err == nil {
-			return EraseLineSeq{Type: t}, true
-		}
+		// if it's just "K" then same as "0K"
+		// so default 0
+		return EraseLineSeq{Type: getCount(s, 0)}, true
 	case 'S':
-		if count, err := strconv.Atoi(s[:len(s)-1]); err == nil {
-			return ScrollUpSeq{Count: count}, true
-		}
+		return ScrollUpSeq{Count: getCount(s, 1)}, true
 	case 'T':
-		if count, err := strconv.Atoi(s[:len(s)-1]); err == nil {
-			return ScrollDownSeq{Count: count}, true
-		}
+		return ScrollDownSeq{Count: getCount(s, 1)}, true
 	case 's':
 		if len(s) == 1 {
 			return SaveCursorPositionSeq{}, true
@@ -212,14 +222,25 @@ func parseCSIStruct(s string) (any, bool) {
 	case 'r':
 		// TODO: implement
 	case 'L':
-		if count, err := strconv.Atoi(s[:len(s)-1]); err == nil {
-			return InsertLineSeq{Count: count}, true
-		}
+		return InsertLineSeq{Count: getCount(s, 1)}, true
 	case 'M':
-		if count, err := strconv.Atoi(s[:len(s)-1]); err == nil {
-			return DeleteLineSeq{Count: count}, true
-		}
+		return DeleteLineSeq{Count: getCount(s, 1)}, true
 	}
 
+	fmt.Println("UNKNOWN ESC", fmt.Sprintf(`"%s"`, s))
+
 	return nil, false
+}
+
+func getCount(s string, defaultVal int) int {
+	count, err := strconv.Atoi(s[:len(s)-1])
+	if err == nil {
+		return count
+	}
+
+	if len(s) == 1 {
+		return defaultVal
+	}
+
+	return 0
 }
