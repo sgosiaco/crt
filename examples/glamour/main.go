@@ -54,6 +54,10 @@ func (e example) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			e.viewport, cmd = e.viewport.Update(msg)
 			return e, cmd
 		}
+	case tea.MouseMsg:
+		var cmd tea.Cmd
+		e.viewport, cmd = e.viewport.Update(msg)
+		return e, cmd
 	case tea.WindowSizeMsg:
 		e.viewport.Width = msg.Width
 		e.viewport.Height = msg.Height - 3

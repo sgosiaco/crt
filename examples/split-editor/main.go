@@ -203,7 +203,7 @@ func (m model) View() string {
 }
 
 func main() {
-	fonts, err := crt.LoadFaces("./fonts/IosevkaTermNerdFontMono-Regular.ttf", "./fonts/IosevkaTermNerdFontMono-Bold.ttf", "./fonts/IosevkaTermNerdFontMono-Italic.ttf", crt.GetFontDPI(), 12.0)
+	fonts, err := crt.LoadDefaultFaces(crt.GetFontDPI(), 28.0)
 	if err != nil {
 		panic(err)
 	}

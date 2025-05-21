@@ -185,24 +185,53 @@ func (b *Adapter) HandleMouseButton(button crt.MouseButton) {
 
 func (b *Adapter) HandleMouseWheel(wheel crt.MouseWheel) {
 	direction := tea.MouseButtonNone
-	if wheel.DY > 0 {
-		direction = tea.MouseButtonWheelUp
-	} else if wheel.DY < 0 {
-		direction = tea.MouseButtonWheelUp
-	}
 
-	if direction == tea.MouseButtonNone {
-		return
-	}
+	// if wheel.DX != 0 && wheel.DY != 0 {
+	// 	// zero the one with less movement
+	// 	if wheel.DX > wheel.DY {
+	// 		wheel.DY = 0
+	// 	} else {
+	// 		wheel.DX = 0
+	// 	}
+	// }
 
-	b.prog.Send(tea.MouseMsg{
-		X:      wheel.X,
-		Y:      wheel.Y,
-		Shift:  wheel.Shift,
-		Alt:    wheel.Alt,
-		Ctrl:   wheel.Ctrl,
-		Button: direction,
-	})
+	// if wheel.DX != 0 {
+	// 	if wheel.DX > 0 {
+	// 		direction = tea.MouseButtonWheelLeft
+	// 	} else if wheel.DX < 0 {
+	// 		direction = tea.MouseButtonWheelRight
+	// 	}
+	//
+	// 	fmt.Println(direction)
+	//
+	// 	b.prog.Send(tea.MouseMsg{
+	// 		X:      wheel.X,
+	// 		Y:      wheel.Y,
+	// 		Shift:  wheel.Shift,
+	// 		Alt:    wheel.Alt,
+	// 		Ctrl:   wheel.Ctrl,
+	// 		Action: tea.MouseActionPress, // ??
+	// 		Button: direction,
+	// 	})
+	// }
+
+	if wheel.DY != 0 {
+		if wheel.DY > 0 {
+			direction = tea.MouseButtonWheelUp
+		} else if wheel.DY < 0 {
+			direction = tea.MouseButtonWheelDown
+		}
+
+		b.prog.Send(tea.MouseMsg{
+			X:      wheel.X,
+			Y:      wheel.Y,
+			Shift:  wheel.Shift,
+			Alt:    wheel.Alt,
+			Ctrl:   wheel.Ctrl,
+			Action: tea.MouseActionPress, // bubbles viewport will filter out mouse scroll events if they don't have this action
+			Button: direction,
+		})
+	}
 }
 
 func (b *Adapter) HandleKeyPress() {

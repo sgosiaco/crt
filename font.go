@@ -142,5 +142,15 @@ func LoadFaces(normal string, bold string, italic string, dpi float64, size floa
 
 // LoadDefaultFaces loads the default fonts embebbed in the library
 func LoadDefaultFaces(dpi float64, size float64) (Fonts, error) {
-	return LoadFacesBytes(fonts.Regular, fonts.Bold, fonts.Italic, dpi, size)
+	return LoadUbuntuFaces(dpi, size)
+}
+
+// LoadUbuntuFaces loads the UbuntuMono font embebbed in the library
+func LoadUbuntuFaces(dpi float64, size float64) (Fonts, error) {
+	return LoadFacesBytes(fonts.UbuntuMonoRegular, fonts.UbuntuMonoBold, fonts.UbuntuMonoItalic, dpi, size)
+}
+
+// LoadIosevkaFaces loads the Iosevka font embebbed in the library
+func LoadIosevkaFaces(dpi float64, size float64) (Fonts, error) {
+	return LoadFacesBytes(fonts.IosevkaTermNerdFontMonoRegular, fonts.IosevkaTermNerdFontMonoBold, fonts.IosevkaTermNerdFontMonoItalic, dpi, size)
 }

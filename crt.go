@@ -600,15 +600,15 @@ func (g *Window) Update() error {
 	}
 
 	// Mouse wheel.
-	_, wy := ebiten.Wheel()
-	if wy > 0 || wy < 0 {
+	wx, wy := ebiten.Wheel()
+	if wx != 0 || wy != 0 {
 		g.inputAdapter.HandleMouseWheel(MouseWheel{
 			X:     g.mouseCellX,
 			Y:     g.mouseCellY,
 			Shift: ebiten.IsKeyPressed(ebiten.KeyShift),
 			Alt:   ebiten.IsKeyPressed(ebiten.KeyAlt),
 			Ctrl:  ebiten.IsKeyPressed(ebiten.KeyControl),
-			DX:    0,
+			DX:    wx,
 			DY:    wy,
 		})
 	}

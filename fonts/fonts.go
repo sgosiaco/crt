@@ -4,11 +4,18 @@ import (
 	_ "embed"
 )
 
-//go:embed IosevkaTermNerdFontMono-Regular.ttf
-var Regular []byte
+var (
+	//go:embed IosevkaTermNerdFontMono/IosevkaTermNerdFontMono-Regular.ttf
+	IosevkaTermNerdFontMonoRegular []byte
+	//go:embed IosevkaTermNerdFontMono/IosevkaTermNerdFontMono-Bold.ttf
+	IosevkaTermNerdFontMonoBold []byte
+	//go:embed IosevkaTermNerdFontMono/IosevkaTermNerdFontMono-Regular.ttf
+	IosevkaTermNerdFontMonoItalic []byte
 
-//go:embed IosevkaTermNerdFontMono-Bold.ttf
-var Bold []byte
-
-//go:embed IosevkaTermNerdFontMono-Regular.ttf
-var Italic []byte
+	//go:embed UbuntuMono/UbuntuMonoNerdFontMono-Regular.ttf
+	UbuntuMonoRegular []byte
+	//go:embed UbuntuMono/UbuntuMonoNerdFontMono-Bold.ttf
+	UbuntuMonoBold []byte
+	//go:embed UbuntuMono/UbuntuMonoNerdFontMono-Italic.ttf
+	UbuntuMonoItalic []byte
+)

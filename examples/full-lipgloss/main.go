@@ -162,7 +162,7 @@ func main() {
 		},
 	}
 
-	fonts, err := crt.LoadDefaultFaces(crt.GetFontDPI(), 16.0)
+	fonts, err := crt.LoadDefaultFaces(crt.GetFontDPI(), 28.0)
 	if err != nil {
 		panic(err)
 	}
